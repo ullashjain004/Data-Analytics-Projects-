@@ -13,3 +13,4 @@ Fare: Passenger Fare (British pound)
 Cabin: Cabin  
 Embarked: Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton)  
  
+# Also adding my Tableau Profile, includes my data analytics projects   
