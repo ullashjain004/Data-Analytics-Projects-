@@ -1,3 +1,5 @@
+# Comparison of two Classification Models
+
 PassengerId: Distinct id’s for Passengers 
 Pclass: Passenger Class (1 = 1st; 2 = 2nd; 3 = 3rd)  
 Survived: Survived (0 = No; 1 = Yes)  
