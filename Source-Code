@@ -1,0 +1,67 @@
+# Importing important libraries 
+ 
+import numpy as np  import pandas as pd import matplotlib.pyplot as plt import seaborn as sns import warnings warnings.filterwarnings('ignore') %matplotlib inline 
+ 
+# Importing Train and Test data 
+ 
+train_df=pd.read_csv("train.csv") test_df=pd.read_csv("test.csv") 
+ 
+# Looking for the missing data values 
+ 
+def missingdata(data):     total = data.isnull().sum().sort_values(ascending = False)     percent = (data.isnull().sum()/data.isnull().count()*100).sort_values(ascending = False)     ms=pd.concat([total, percent], axis=1, keys=['Total', 'Percent'])     ms= ms[ms["Percent"] > 0]     f,ax =plt.subplots(figsize=(8,6))     plt.xticks(rotation='90')     fig=sns.barplot(ms.index, ms["Percent"],color="green",alpha=0.8)     plt.xlabel('Features', fontsize=15)     plt.ylabel('Percent of missing values', fontsize=15)     plt.title('Percent missing data by feature', fontsize=15)     return ms 
+ 
+#Identifying Missing Value missingdata(train_df) 
+
+# Replacing the Missing embarked Column values by mode value train_df['Embarked'].fillna(train_df['Embarked'].mode()[0], inplace = True) 
+ 
+# Replacing the Missing Fare values by median value test_df['Fare'].fillna(test_df['Fare'].median(), inplace = True) 
+ 
+# Cabin Featueres has more than 75% of missing data in both Test and train data so we will remove the Cabin attribute drop_column = ['Cabin'] train_df.drop(drop_column, axis=1, inplace = True) test_df.drop(drop_column,axis=1,inplace=True) 
+# Both the test and train Age features contains more the 15% of missing Data so we are fill with the median test_df['Age'].fillna(test_df['Age'].median(), inplace = True) train_df['Age'].fillna(train_df['Age'].median(), inplace = True) 
+ 
+print('check the nan value in train data') print(train_df.isnull().sum()) print('___'*30) print('check the nan value in test data') print(test_df.isnull().sum()) 
+ 
+# combine test and train as single to apply some function all_data=[train_df,test_df] 
+ 
+# Create new feature FamilySize as a combination of SibSp and Parch for dataset in all_data:     dataset['FamilySize'] = dataset['SibSp'] + dataset['Parch'] + 1 
+ 
+import re # Define function to extract titles from passenger names def get_title(name):     title_search = re.search(' ([A-Za-z]+)\.', name)     # If the title exists, extract and return it.     if title_search:         return title_search.group(1)     return "" # Create a new feature Title, containing the titles of passenger names for dataset in all_data:     dataset['Title'] = dataset['Name'].apply(get_title) # Group all non-common titles into one single grouping "Rare" for dataset in all_data:     dataset['Title'] = dataset['Title'].replace(['Lady', 'Countess','Capt', 'Col','Don',                                                   'Dr', 'Major', 'Rev', 'Sir', 'Jonkheer', 'Dona'], 'Rare') 
+ 
+    dataset['Title'] = dataset['Title'].replace('Mlle', 'Miss')     dataset['Title'] = dataset['Title'].replace('Ms', 'Miss')     dataset['Title'] = dataset['Title'].replace('Mme', 'Mrs') 
+ 
+for dataset in all_data:     dataset['Age_bin'] = pd.cut(dataset['Age'], bins=[0,12,20,40,120], labels=['Children','Teenage','Adult','Elder']) 
+ 
+ 
+ 
+ 
+# create bin for fare features for dataset in all_data: 
+    dataset['Fare_bin'] = pd.cut(dataset['Fare'], bins=[0,7.91,14.45,31,120], labels=['Low_fare','median_fare',                                                                                       'Average_fare','high_fare']) 
+ 
+# for our reference making a copy of both DataSet start working for copy of dataset traindf=train_df testdf=test_df 
+ 
+all_dat=[traindf,testdf] 
+ 
+for dataset in all_dat:     drop_column = ['Age','Fare','Name','Ticket']     dataset.drop(drop_column, axis=1, inplace = True) 
+ 
+drop_column = ['PassengerId'] traindf.drop(drop_column, axis=1, inplace = True) 
+ 
+# Final Train data for modeling  traindf = pd.get_dummies(traindf, columns = ["Sex","Title","Age_bin","Embarked","Fare_bin"],                              prefix=["Sex","Title","Age_type","Em_type","Fare_type"]) 
+ 
+# Final Test data for modeling testdf = pd.get_dummies(testdf, columns = ["Sex","Title","Age_bin","Embarked","Fare_bin"],                              prefix=["Sex","Title","Age_type","Em_type","Fare_type"]) testdf.head() 
+ 
+ 
+ 
+ # Importing necessary libraries for split,10 fold cross validation, accuracy and confusion matrix 
+ 
+from sklearn.model_selection import train_test_split #for split the data from sklearn.metrics import accuracy_score  #for accuracy_score from sklearn.model_selection import KFold #for K-fold cross validation 
+from sklearn.model_selection import cross_val_score #score evaluation from sklearn.model_selection import cross_val_predict #prediction from sklearn.metrics import confusion_matrix #for confusion matrix all_features = traindf.drop("Survived",axis=1) Targeted_feature = traindf["Survived"] X_train,X_test,y_train,y_test = train_test_split(all_features,Targeted_feature,test_size=0.3,random_state=42) X_train.shape,X_test.shape,y_train.shape,y_test.shape 
+
+
+Random Forest Accuracy & Cross Validation Score: 
+ 
+from sklearn.ensemble import RandomForestClassifier model = RandomForestClassifier(criterion='gini', n_estimators=700,                              min_samples_split=10,min_samples_leaf=1,                              max_features='auto',oob_score=True,                              random_state=1,n_jobs=-1) model.fit(X_train,y_train) prediction_rm=model.predict(X_test) print('--------------The Accuracy of the model----------------------------') print('The accuracy of the Random Forest Classifier is',round(accuracy_score(prediction_rm,y_test)*10 0,2)) kfold = KFold(n_splits=10, random_state=22) # k=10, split the data into 10 equal parts result_rm=cross_val_score(model,all_features,Targeted_feature,cv=10,scoring='accuracy') print('The cross validated score for Random Forest Classifier is:',round(result_rm.mean()*100,2)) y_pred = cross_val_predict(model,all_features,Targeted_feature,cv=10) sns.heatmap(confusion_matrix(Targeted_feature,y_pred),annot=True,fmt='3.0f',cmap="summer") plt.title('Confusion_matrix', y=1.05, size=15) 
+
+
+Decision Tree Accuracy & Cross Validation Score : 
+ 
+from sklearn.tree import DecisionTreeClassifier model= DecisionTreeClassifier(criterion='gini',                               min_samples_split=10,min_samples_leaf=1,                              max_features='auto') model.fit(X_train,y_train) prediction_tree=model.predict(X_test) print('--------------The Accuracy of the model----------------------------') print('The accuracy of the DecisionTree Classifier is',round(accuracy_score(prediction_tree,y_test)*10 0,2)) kfold = KFold(n_splits=10, random_state=22) # k=10, split the data into 10 equal parts result_tree=cross_val_score(model,all_features,Targeted_feature,cv=10,scoring='accuracy') print('The cross validated score for Decision Tree classifier is:',round(result_tree.mean()*100,2)) y_pred = cross_val_predict(model,all_features,Targeted_feature,cv=10) sns.heatmap(confusion_matrix(Targeted_feature,y_pred),annot=True,fmt='3.0f',cmap="summer") plt.title('Confusion_matrix', y=1.05, size=15) 
