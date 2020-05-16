@@ -14,3 +14,5 @@ Cabin: Cabin
 Embarked: Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton)  
  
 # Also adding my Tableau Profile, includes my data analytics projects   
+
+https://public.tableau.com/profile/ullash.jain#!/
